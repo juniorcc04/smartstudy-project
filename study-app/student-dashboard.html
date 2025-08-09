@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SmartStudy Student Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans min-h-screen flex flex-col">
+
+  <!-- Navbar -->
+  <nav class="bg-blue-600 text-white px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-0">
+    <h1 class="text-2xl font-bold truncate max-w-full sm:max-w-xs text-center sm:text-left">📚 Student Dashboard</h1>
+    <button id="logoutBtn" class="bg-red-500 px-4 py-2 rounded hover:bg-red-600 whitespace-nowrap">
+      Logout
+    </button>
+  </nav>
+
+  <main class="flex-grow p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto w-full">
+    <!-- Welcome Message -->
+    <section class="mb-8">
+      <h2 id="welcomeMessage" class="text-xl font-semibold text-gray-800 truncate"></h2>
+    </section>
+
+    <!-- Notes Section -->
+    <section class="mb-12">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-semibold">Notes</h2>
+      </div>
+      <div id="studentNotesList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-6">
+        <!-- Notes cards appear here -->
+      </div>
+    </section>
+
+    <!-- Quizzes Section -->
+    <section>
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-semibold">Quizzes</h2>
+      </div>
+      <div id="studentQuizzesList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-6">
+        <!-- Quizzes cards appear here -->
+      </div>
+    </section>
+  </main>
+
+  <!-- Quiz Modal -->
+  <div id="quizModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4 sm:p-8 hidden z-50">
+    <div class="bg-white p-6 rounded-lg shadow-lg max-w-lg w-full relative max-h-[90vh] overflow-auto">
+      <button id="closeQuizModal" class="absolute top-4 right-4 text-red-500 text-3xl font-bold hover:text-red-600">&times;</button>
+      <h3 id="quizTitle" class="text-xl font-bold mb-4"></h3>
+      <div class="text-sm text-gray-500 mb-2" id="quizProgress"></div>
+      <p id="quizQuestion" class="mb-4 font-medium"></p>
+      <div id="quizOptions" class="space-y-2 mb-4"></div>
+      <div class="flex justify-between">
+        <button id="prevQuestion" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded">Previous</button>
+        <button id="nextQuestion" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">Next</button>
+      </div>
+    </div>
+  </div>
+
+
+ <!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/10.5.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.5.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.5.2/firebase-firestore-compat.js"></script>
+
+  <script src="js/firebase-config.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/student-dashboard.js"></script>
+  
+</body>
+</html>
+  

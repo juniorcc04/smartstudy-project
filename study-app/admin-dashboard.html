@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin Dashboard - SmartStudy</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <!-- Navbar -->
+  <nav class="bg-blue-600 text-white px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-0">
+    <h1 class="text-2xl font-bold">SmartStudy Admin</h1>
+    <button id="logoutBtn" class="bg-red-500 px-4 py-2 rounded hover:bg-red-600">Logout</button>
+  </nav>
+  <main class="p-4 sm:p-6 max-w-full sm:max-w-4xl mx-auto">
+    <!-- Notes Section -->
+    <section class="mb-12">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-semibold">Notes</h2>
+        <button id="openAddNoteModal" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 whitespace-nowrap">+ Add Note</button>
+      </div>
+      <div id="notesList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Notes will appear here -->
+      </div>
+    </section>
+    <!-- Quizzes Section -->
+    <section>
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-semibold">Quizzes</h2>
+        <button id="openAddQuizModal" class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 whitespace-nowrap">+ Add Quiz</button>
+      </div>
+      <div id="quizzesList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Quizzes will appear here -->
+      </div>
+    </section>
+  </main>
+
+  <!-- Add Note Modal -->
+  <div id="addNoteModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center overflow-auto p-4 z-50">
+    <div class="bg-white rounded-lg p-6 w-full max-w-md shadow-lg max-h-[90vh] overflow-y-auto">
+      <h2 class="text-xl font-semibold mb-4">Add New Note</h2>
+      <form id="addNoteForm" class="space-y-4">
+        <div>
+          <label for="noteTitle" class="block text-sm font-medium">Note Title</label>
+          <input type="text" id="noteTitle" class="border rounded w-full px-3 py-2 mt-1" required />
+        </div>
+        <div>
+          <label for="noteUrl" class="block text-sm font-medium">Note URL</label>
+          <input type="url" id="noteUrl" class="border rounded w-full px-3 py-2 mt-1" required />
+        </div>
+        <div class="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2">
+          <button type="button" id="cancelNoteBtn" class="w-full sm:w-auto bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500">Cancel</button>
+          <button type="submit" class="w-full sm:w-auto bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">Save Note</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Note Modal -->
+  <div id="editNoteModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center overflow-auto p-4 z-50">
+    <div class="bg-white rounded-lg p-6 w-full max-w-md shadow-lg max-h-[90vh] overflow-y-auto">
+      <h2 class="text-xl font-semibold mb-4">Edit Note</h2>
+      <form id="editNoteForm" class="space-y-4">
+        <input type="hidden" id="editNoteId" />
+        <div>
+          <label for="editNoteTitle" class="block text-sm font-medium">Note Title</label>
+          <input type="text" id="editNoteTitle" class="border rounded w-full px-3 py-2 mt-1" required />
+        </div>
+        <div>
+          <label for="editNoteURL" class="block text-sm font-medium">Note URL</label>
+          <input type="url" id="editNoteURL" class="border rounded w-full px-3 py-2 mt-1" required />
+        </div>
+        <div class="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2">
+          <button type="button" id="cancelEditBtn" class="w-full sm:w-auto bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500">Cancel</button>
+          <button type="submit" class="w-full sm:w-auto bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add/Edit Quiz Modal -->
+  <div id="addQuizModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center overflow-auto p-4 z-50">
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-xl p-4 relative max-h-[90vh] overflow-y-auto">
+      <h2 class="text-xl font-semibold mb-3">Add / Edit Quiz</h2>
+      <form id="addQuizForm" class="space-y-4">
+        <div>
+          <label for="quizTitle" class="block text-sm font-medium mb-1">Quiz Title</label>
+          <input id="quizTitle" type="text" required
+            class="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+        <div>
+          <label for="quizQuestion" class="block text-sm font-medium mb-1">Question</label>
+          <textarea id="quizQuestion" rows="2" required
+            class="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+        </div>
+        <div id="quizOptions" class="space-y-2">
+          <div class="flex items-center gap-2">
+            <input type="radio" name="correctOption" value="0" required
+              class="w-4 h-4 text-blue-600 focus:ring-blue-500" />
+            <input type="text" placeholder="Option 1"
+              class="quizOption flex-grow border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required />
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="radio" name="correctOption" value="1"
+              class="w-4 h-4 text-blue-600 focus:ring-blue-500" />
+            <input type="text" placeholder="Option 2"
+              class="quizOption flex-grow border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="radio" name="correctOption" value="2"
+              class="w-4 h-4 text-blue-600 focus:ring-blue-500" />
+            <input type="text" placeholder="Option 3"
+              class="quizOption flex-grow border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="radio" name="correctOption" value="3"
+              class="w-4 h-4 text-blue-600 focus:ring-blue-500" />
+            <input type="text" placeholder="Option 4"
+              class="quizOption flex-grow border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+        </div>
+        <div class="flex justify-between items-center mt-3">
+          <button type="button" id="prevQuestionBtn"
+            class="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1.5 px-3 rounded disabled:opacity-50"
+            disabled>Previous</button>
+          <button type="button" id="nextQuestionBtn"
+            class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-1.5 px-3 rounded">Next</button>
+          <button type="button" id="deleteQuestionBtn"
+            class="bg-red-500 hover:bg-red-600 text-white font-semibold py-1.5 px-3 rounded disabled:opacity-50"
+            disabled>Delete</button>
+        </div>
+        <div class="text-center text-xs text-gray-600 mt-1" id="questionCountText"></div>
+        <div class="flex flex-col sm:flex-row justify-end gap-2 mt-4">
+          <button type="button" id="cancelQuizBtn"
+            class="w-full sm:w-auto bg-gray-500 hover:bg-gray-600 text-white font-semibold py-1.5 px-5 rounded">Cancel</button>
+          <button type="submit"
+            class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-semibold py-1.5 px-5 rounded">Save Quiz</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Quiz Modal -->
+  <div id="editQuizModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center overflow-auto p-4 z-50">
+    <div class="bg-white rounded-lg p-6 w-full max-w-2xl shadow-lg max-h-[90vh] overflow-y-auto">
+      <h2 class="text-xl font-semibold mb-4">Edit Quiz</h2>
+      <form id="editQuizForm" class="space-y-4">
+        <input type="hidden" id="editQuizId" />
+        <div id="editQuestionsContainer" class="space-y-4 max-h-64 overflow-y-auto border rounded p-3">
+          <!-- Questions will be added here -->
+        </div>
+        <button type="button" id="editAddQuestionBtn" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">+ Add Question</button>
+        <div class="flex flex-col sm:flex-row justify-end space-x-0 sm:space-x-2 space-y-2 sm:space-y-0 mt-4">
+          <button type="button" id="cancelEditQuizBtn" class="w-full sm:w-auto bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500">Cancel</button>
+          <button type="submit" class="w-full sm:w-auto bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/10.5.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.5.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.5.2/firebase-firestore-compat.js"></script>
+
+<!-- Firebase config and app logic -->
+<script src="js/firebase-config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/admin-dashboard-notes.js"></script>
+<script src="js/admin-dashboard-quizzes.js"></script>
+
+</body>
+</html>
+  
