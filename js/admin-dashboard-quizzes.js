@@ -1,6 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
   const db = firebase.firestore();
-
   // Elements
   const quizzesList = document.getElementById("quizzesList");
   const addQuizModal = document.getElementById("addQuizModal");
@@ -14,6 +13,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const cancelQuizBtn = document.getElementById("cancelQuizBtn");
   const openAddQuizModalBtn = document.getElementById("openAddQuizModal");
   const deleteQuestionBtn = document.getElementById("deleteQuestionBtn");
+  // Pagination buttons
+  const prevQuizzesBtn = document.getElementById("prevQuizzesBtn");
+  const nextQuizzesBtn = document.getElementById("nextQuizzesBtn");
+  // For Sorting
+  const quizzesSortSelect = document.getElementById("quizzesSort");
 
   let quizQuestions = [];
   let currentQuestionIndex = 0;
@@ -21,7 +25,6 @@ document.addEventListener("DOMContentLoaded", () => {
   let editQuizId = null;
 
   // Helpers
-
   function createEmptyQuestion() {
     return {
       question: "",
@@ -30,65 +33,52 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
-  // Load question into form inputs
+  // Load current question into form inputs
   function loadCurrentQuestion() {
     const q = quizQuestions[currentQuestionIndex];
-
     questionInput.value = q.question;
-
     // Update options inputs & radios
     const optionInputs = quizOptionsContainer.querySelectorAll("input.quizOption");
     const optionRadios = quizOptionsContainer.querySelectorAll("input[name='correctOption']");
-
     optionInputs.forEach((input, i) => {
       input.value = q.options[i] || "";
     });
-
     optionRadios.forEach((radio, i) => {
       radio.checked = q.correctAnswer === i;
     });
-
     prevQuestionBtn.disabled = currentQuestionIndex === 0;
     deleteQuestionBtn.disabled = quizQuestions.length <= 1;
     questionCountText.textContent = `Question ${currentQuestionIndex + 1} of ${quizQuestions.length}`;
     nextQuestionBtn.textContent = currentQuestionIndex === quizQuestions.length - 1 ? "Add Question" : "Next";
   }
 
-  // Save current inputs into quizQuestions array (with validation)
+  // Save current question with validation
   function saveCurrentQuestion() {
     const questionText = questionInput.value.trim();
     const optionInputs = quizOptionsContainer.querySelectorAll("input.quizOption");
     const optionRadios = quizOptionsContainer.querySelectorAll("input[name='correctOption']:checked");
-
     const options = Array.from(optionInputs).map(input => input.value.trim());
     const correctAnswerRadio = optionRadios[0]; // should be 1 selected or none
 
-    // Validation
     if (!questionText) {
       alert("Please enter the question.");
       return false;
     }
-
-    // Must have at least 2 non-empty options
     const filledOptions = options.filter(opt => opt !== "");
     if (filledOptions.length < 2) {
       alert("Please enter at least two options.");
       return false;
     }
-
-    // Check that correct answer is selected and valid
     if (!correctAnswerRadio) {
       alert("Please select the correct answer.");
       return false;
     }
-
     const correctAnswerIndex = parseInt(correctAnswerRadio.value);
     if (correctAnswerIndex < 0 || correctAnswerIndex >= options.length || options[correctAnswerIndex] === "") {
       alert("Correct answer must be one of the filled options.");
       return false;
     }
 
-    // Save current question
     quizQuestions[currentQuestionIndex] = {
       question: questionText,
       options,
@@ -97,15 +87,13 @@ document.addEventListener("DOMContentLoaded", () => {
     return true;
   }
 
-  // Save current inputs WITHOUT validation (for navigating back)
+  // Save current question without validation (for navigating back)
   function saveCurrentQuestionNoValidation() {
     const questionText = questionInput.value.trim();
     const optionInputs = quizOptionsContainer.querySelectorAll("input.quizOption");
     const optionRadios = quizOptionsContainer.querySelectorAll("input[name='correctOption']:checked");
-
     const options = Array.from(optionInputs).map(input => input.value.trim());
     const correctAnswerIndex = optionRadios.length > 0 ? parseInt(optionRadios[0].value) : null;
-
     quizQuestions[currentQuestionIndex] = {
       question: questionText,
       options,
@@ -113,7 +101,7 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
-  // Reset quiz form and state
+  // Reset form and state
   function resetQuizForm() {
     addQuizForm.reset();
     quizQuestions = [];
@@ -123,7 +111,7 @@ document.addEventListener("DOMContentLoaded", () => {
     questionCountText.textContent = "";
   }
 
-  // Open modal for adding new quiz
+  // Open add quiz modal
   openAddQuizModalBtn.addEventListener("click", () => {
     resetQuizForm();
     quizQuestions = [createEmptyQuestion()];
@@ -139,7 +127,7 @@ document.addEventListener("DOMContentLoaded", () => {
     addQuizModal.classList.add("hidden");
   });
 
-  // Prev question button
+  // Prev question
   prevQuestionBtn.addEventListener("click", () => {
     saveCurrentQuestionNoValidation();
     if (currentQuestionIndex > 0) {
@@ -148,23 +136,20 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Next question button
+  // Next question
   nextQuestionBtn.addEventListener("click", () => {
     if (!saveCurrentQuestion()) return;
-
     if (currentQuestionIndex === quizQuestions.length - 1) {
-      // Add new empty question
       quizQuestions.push(createEmptyQuestion());
       currentQuestionIndex++;
       loadCurrentQuestion();
     } else {
-      // Move to next question
       currentQuestionIndex++;
       loadCurrentQuestion();
     }
   });
 
-  // Delete question button
+  // Delete question
   deleteQuestionBtn.addEventListener("click", () => {
     if (quizQuestions.length === 1) {
       alert("You must have at least one question.");
@@ -177,21 +162,17 @@ document.addEventListener("DOMContentLoaded", () => {
     loadCurrentQuestion();
   });
 
-  // Submit quiz (Add or Update)
+  // Submit quiz form (Add or Update)
   addQuizForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-
     if (!saveCurrentQuestion()) return;
-
     const title = quizTitleInput.value.trim();
     if (!title) {
       alert("Please enter the quiz title.");
       return;
     }
-
     try {
       if (isEditMode && editQuizId) {
-        // Update existing quiz
         await db.collection("quizzes").doc(editQuizId).update({
           title,
           questions: quizQuestions,
@@ -199,7 +180,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         alert("Quiz updated successfully!");
       } else {
-        // Add new quiz
         await db.collection("quizzes").add({
           title,
           questions: quizQuestions,
@@ -207,7 +187,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         alert("Quiz added successfully!");
       }
-
       addQuizModal.classList.add("hidden");
       resetQuizForm();
       loadQuizzes();
@@ -217,73 +196,121 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Load quizzes list
-  async function loadQuizzes() {
-    quizzesList.innerHTML = "Loading quizzes...";
-    try {
-      const snapshot = await db.collection("quizzes").orderBy("createdAt", "desc").get();
-      if (snapshot.empty) {
-        quizzesList.innerHTML = "<p class='text-gray-600'>No quizzes available.</p>";
-        return;
-      }
+// Load Notes
+const quizzesPerPage = 5;  // number of quizzes per page
+let currentQuizzesSort = "createdAt"; // default sort
+let lastVisibleQuiz = null;
+let firstVisibleQuiz = null;
+let quizPagesStack = [];
 
-      quizzesList.innerHTML = "";
-      snapshot.forEach(doc => {
-        const quiz = doc.data();
-        const quizId = doc.id;
 
-        const div = document.createElement("div");
-        div.className = "bg-white p-4 rounded shadow flex justify-between items-center";
-        div.innerHTML = `
-          <div>
-            <h3 class="font-semibold text-lg mb-1">${quiz.title}</h3>
-            <p>${quiz.questions.length} question(s)</p>
-          </div>
-          <div class="space-x-2">
-            <button class="editQuizBtn bg-yellow-400 px-3 py-1 rounded hover:bg-yellow-500" data-id="${quizId}">Edit</button>
-            <button class="deleteQuizBtn bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600" data-id="${quizId}">Delete</button>
-            <button class="viewQuizBtn bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700" data-id="${quizId}">View</button>
-          </div>
-        `;
+// Handle sort dropdown change
+quizzesSortSelect.addEventListener("change", () => {
+  currentQuizzesSort = quizzesSortSelect.value;
+  lastVisibleQuiz = null;
+  firstVisibleQuiz = null;
+  quizPagesStack = [];
+  loadQuizzes("initial");
+});
 
-        // Attach button listeners
-        div.querySelector(".editQuizBtn").addEventListener("click", () => editQuiz(quizId));
-        div.querySelector(".deleteQuizBtn").addEventListener("click", () => deleteQuiz(quizId));
-        div.querySelector(".viewQuizBtn").addEventListener("click", () => viewQuiz(quizId));
+// Pagination buttons
+prevQuizzesBtn.addEventListener("click", () => loadQuizzes("prev"));
+nextQuizzesBtn.addEventListener("click", () => loadQuizzes("next"));
 
-        quizzesList.appendChild(div);
-      });
-    } catch (err) {
-      console.error("Error loading quizzes:", err);
-      quizzesList.innerHTML = "<p class='text-red-500'>Failed to load quizzes.</p>";
-    }
+async function loadQuizzes(direction = "initial") {
+  quizzesList.innerHTML = "<p>Loading quizzes...</p>";
+
+  // Ascending if sorting by title, else descending
+  const orderDirection = currentQuizzesSort === "title" ? "asc" : "desc";
+
+  let quizzesRef = db.collection("quizzes").orderBy(currentQuizzesSort, orderDirection).limit(quizzesPerPage);
+  let query;
+
+  if (direction === "next" && lastVisibleQuiz) {
+    query = quizzesRef.startAfter(lastVisibleQuiz);
+  } else if (direction === "prev" && quizPagesStack.length > 1) {
+    quizPagesStack.pop();
+    const prevFirstDoc = quizPagesStack[quizPagesStack.length - 1];
+    query = quizzesRef.startAt(prevFirstDoc);
+  } else {
+    query = quizzesRef;
+    quizPagesStack = [];
   }
 
-  // Edit quiz
+  try {
+    const snapshot = await query.get();
+
+    if (snapshot.empty) {
+      quizzesList.innerHTML = "<p>No quizzes available.</p>";
+      prevQuizzesBtn.disabled = true;
+      nextQuizzesBtn.disabled = true;
+      return;
+    }
+
+    quizzesList.innerHTML = "";
+
+    snapshot.forEach(doc => {
+      const quiz = doc.data();
+      const quizId = doc.id;
+
+      // Customize display below as needed
+      const div = document.createElement("div");
+      div.className = "bg-white p-4 rounded shadow mb-2 flex justify-between items-center";
+      div.innerHTML = `
+        <div>
+          <h3 class="font-semibold text-lg">${quiz.title || "Untitled Quiz"}</h3>
+        </div>
+        <div class="space-x-2">
+          <button class="editQuizBtn bg-yellow-400 px-3 py-1 rounded hover:bg-yellow-500" data-id="${quizId}">Edit</button>
+          <button class="deleteQuizBtn bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600" data-id="${quizId}">Delete</button>
+        </div>
+      `;
+      quizzesList.appendChild(div);
+    });
+
+    firstVisibleQuiz = snapshot.docs[0];
+    lastVisibleQuiz = snapshot.docs[snapshot.docs.length - 1];
+
+    if (direction === "initial" || direction === "next") {
+      quizPagesStack.push(firstVisibleQuiz);
+    }
+
+    prevQuizzesBtn.disabled = quizPagesStack.length <= 1;
+    nextQuizzesBtn.disabled = snapshot.docs.length < quizzesPerPage;
+
+  } catch (error) {
+    console.error("Error loading quizzes:", error);
+    quizzesList.innerHTML = "<p class='text-red-500'>Failed to load quizzes.</p>";
+    prevQuizzesBtn.disabled = true;
+    nextQuizzesBtn.disabled = true;
+  }
+}
+
+// Initial load
+loadQuizzes();
+
+  // Edit quiz handler
   function editQuiz(quizId) {
     db.collection("quizzes").doc(quizId).get().then(doc => {
       if (!doc.exists) {
         alert("Quiz not found!");
         return;
       }
-
       const quiz = doc.data();
       isEditMode = true;
       editQuizId = quizId;
-
       quizTitleInput.value = quiz.title;
       quizQuestions = quiz.questions || [];
       if (quizQuestions.length === 0) {
         quizQuestions = [createEmptyQuestion()];
       }
       currentQuestionIndex = 0;
-
       addQuizModal.classList.remove("hidden");
       loadCurrentQuestion();
     });
   }
 
-  // Delete quiz
+  // Delete quiz handler
   function deleteQuiz(quizId) {
     if (confirm("Are you sure you want to delete this quiz?")) {
       db.collection("quizzes").doc(quizId).delete()
@@ -298,7 +325,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // View quiz (simple alert showing questions + options + correct answer)
+  // View quiz handler (simple alert showing questions)
   function viewQuiz(quizId) {
     db.collection("quizzes").doc(quizId).get().then(doc => {
       if (!doc.exists) {
@@ -318,6 +345,20 @@ document.addEventListener("DOMContentLoaded", () => {
       alert(details);
     });
   }
+
+  // Event delegation for buttons inside quizzesList
+  quizzesList.addEventListener("click", (e) => {
+    if (e.target.classList.contains("viewQuizBtn")) {
+      const quizId = e.target.dataset.id;
+      viewQuiz(quizId);
+    } else if (e.target.classList.contains("editQuizBtn")) {
+      const quizId = e.target.dataset.id;
+      editQuiz(quizId);
+    } else if (e.target.classList.contains("deleteQuizBtn")) {
+      const quizId = e.target.dataset.id;
+      deleteQuiz(quizId);
+    }
+  });
 
   // Initial load
   loadQuizzes();

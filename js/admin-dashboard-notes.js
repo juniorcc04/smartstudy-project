@@ -20,6 +20,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const editNoteURLInput = document.getElementById("editNoteURL");
   const cancelEditBtn = document.getElementById("cancelEditBtn");
 
+  // Pagination buttons
+  const prevNotesBtn = document.getElementById("prevNotesBtn");
+  const nextNotesBtn = document.getElementById("nextNotesBtn");
+
+  // For Sorting
+  const notesSortSelect = document.getElementById("notesSort");
+
+
 
   // --- Add Note Modal Handlers ---
 
@@ -34,63 +42,143 @@ document.addEventListener("DOMContentLoaded", () => {
     addNoteModal.classList.add("hidden");
   });
 
-  // Handle Add Note form submit
-  addNoteForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const title = noteTitleInput.value.trim();
-    const url = noteUrlInput.value.trim();
-    if (!title || !url) {
-      alert("Please fill all fields.");
+  // Convert GitHub blob link to raw link (supports ?raw=true and similar)
+function convertGitHubLink(url) {
+  // Remove any query string first
+  const cleanUrl = url.split("?")[0];
+
+  const regex = /^https:\/\/github\.com\/([^\/]+)\/([^\/]+)\/blob\/([^\/]+)\/(.+)$/;
+  const match = cleanUrl.match(regex);
+
+  if (match) {
+    const user = match[1];
+    const repo = match[2];
+    const branch = match[3];
+    const filePath = match[4];
+    return `https://raw.githubusercontent.com/${user}/${repo}/${branch}/${filePath}`;
+  }
+
+  return url; // No change if it's not a GitHub blob link
+}
+
+// Handle Add Note form submit
+addNoteForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const title = noteTitleInput.value.trim();
+  let url = noteUrlInput.value.trim();
+
+  if (!title || !url) {
+    alert("Please fill all fields.");
+    return;
+  }
+
+  // Auto-convert GitHub link
+  url = convertGitHubLink(url);
+
+  try {
+    await db.collection("notes").add({
+      title,
+      url,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+
+    alert("Note added.");
+    addNoteModal.classList.add("hidden");
+    loadNotes();
+  } catch (err) {
+    console.error("Add note error:", err);
+    alert("Failed to add note.");
+  }
+});
+
+// Load Notes
+const notesPerPage = 5;
+let currentNotesSort = "createdAt"; // default sort field
+let lastVisibleNote = null;
+let firstVisibleNote = null;
+let notePagesStack = [];
+
+// Handle sort dropdown change
+notesSortSelect.addEventListener("change", () => {
+  currentNotesSort = notesSortSelect.value;
+  lastVisibleNote = null;
+  firstVisibleNote = null;
+  notePagesStack = [];
+  loadNotes("initial");
+});
+
+// Pagination buttons
+prevNotesBtn.addEventListener("click", () => loadNotes("prev"));
+nextNotesBtn.addEventListener("click", () => loadNotes("next"));
+
+async function loadNotes(direction = "initial") {
+  notesList.innerHTML = "Loading notes...";
+
+  // Ascending if sorting by title, else descending
+  const orderDirection = currentNotesSort === "title" ? "asc" : "desc";
+  const notesRef = db.collection("notes").orderBy(currentNotesSort, orderDirection).limit(notesPerPage);
+
+  let query;
+  if (direction === "next" && lastVisibleNote) {
+    query = notesRef.startAfter(lastVisibleNote);
+  } else if (direction === "prev" && notePagesStack.length > 1) {
+    notePagesStack.pop(); // remove current page
+    const prevFirstDoc = notePagesStack[notePagesStack.length - 1];
+    query = notesRef.startAt(prevFirstDoc);
+  } else {
+    query = notesRef;
+    notePagesStack = [];
+  }
+
+  try {
+    const snapshot = await query.get();
+    if (snapshot.empty) {
+      notesList.innerHTML = "<p class='text-gray-600'>No notes available.</p>";
+      prevNotesBtn.disabled = true;
+      nextNotesBtn.disabled = true;
       return;
     }
-    try {
-      await db.collection("notes").add({
-        title,
-        url,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      });
-      alert("Note added.");
-      addNoteModal.classList.add("hidden");
-      loadNotes();
-    } catch (err) {
-      console.error("Add note error:", err);
-      alert("Failed to add note.");
-    }
-  });
+    notesList.innerHTML = "";
+    snapshot.forEach(doc => {
+      const note = doc.data();
+      const noteId = doc.id;
+      const div = document.createElement("div");
+      div.className = "bg-white p-4 rounded shadow flex justify-between items-center";
+      div.innerHTML = `
+        <div>
+          <h3 class="font-semibold text-lg mb-1">${note.title}</h3>
+        </div>
+        <div class="space-x-2">
+          <button class="editNoteBtn bg-yellow-400 px-3 py-1 rounded hover:bg-yellow-500" data-id="${noteId}">Edit</button>
+          <button class="deleteNoteBtn bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600" data-id="${noteId}">Delete</button>
+          <button class="downloadNoteBtn bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700" data-id="${noteId}">Download</button>
+        </div>
+      `;
+      notesList.appendChild(div);
+    });
 
-  // --- Load Notes ---
+    firstVisibleNote = snapshot.docs[0];
+    lastVisibleNote = snapshot.docs[snapshot.docs.length - 1];
 
-  async function loadNotes() {
-    notesList.innerHTML = "Loading notes...";
-    try {
-      const snapshot = await db.collection("notes").orderBy("createdAt", "desc").get();
-      if (snapshot.empty) {
-        notesList.innerHTML = "<p class='text-gray-600'>No notes available.</p>";
-        return;
-      }
-      notesList.innerHTML = "";
-      snapshot.forEach(doc => {
-        const note = doc.data();
-        const noteId = doc.id;
-        const div = document.createElement("div");
-        div.className = "bg-white p-4 rounded shadow flex justify-between items-center";
-        div.innerHTML = `
-          <div>
-            <h3 class="font-semibold text-lg mb-1">${note.title}</h3>
-          </div>
-          <div class="space-x-2">
-            <button class="editNoteBtn bg-yellow-400 px-3 py-1 rounded hover:bg-yellow-500" data-id="${noteId}">Edit</button>
-            <button class="deleteNoteBtn bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600" data-id="${noteId}">Delete</button>
-            <button class="viewNoteBtn bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700" data-id="${noteId}">View</button>
-          </div>
-        `;
-        notesList.appendChild(div);
-      });
-    } catch (err) {
-      console.error("Error loading notes:", err);
-      notesList.innerHTML = "<p class='text-red-500'>Failed to load notes.</p>";
+    if (direction === "initial" || direction === "next") {
+      notePagesStack.push(firstVisibleNote);
     }
+
+    prevNotesBtn.disabled = notePagesStack.length <= 1;
+    nextNotesBtn.disabled = snapshot.docs.length < notesPerPage;
+
+  } catch (err) {
+    console.error("Error loading notes:", err);
+    notesList.innerHTML = "<p class='text-red-500'>Failed to load notes.</p>";
+    prevNotesBtn.disabled = true;
+    nextNotesBtn.disabled = true;
   }
+}
+
+// Initial load
+loadNotes();
+
 
   // --- Notes Event Delegation ---
 
@@ -101,7 +189,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } else if (e.target.classList.contains("deleteNoteBtn")) {
       const id = e.target.dataset.id;
       deleteNote(id);
-    } else if (e.target.classList.contains("viewNoteBtn")) {
+    } else if (e.target.classList.contains("downloadNoteBtn")) {
       const id = e.target.dataset.id;
       viewNote(id);
     }
@@ -131,11 +219,14 @@ document.addEventListener("DOMContentLoaded", () => {
     e.preventDefault();
     const id = editNoteIdInput.value;
     const title = editNoteTitleInput.value.trim();
-    const url = editNoteURLInput.value.trim();
+    let url = editNoteURLInput.value.trim();
     if (!title || !url) {
       alert("Please fill all fields.");
       return;
     }
+
+     url = convertGitHubLink(url);
+
     try {
       await db.collection("notes").doc(id).update({ title, url });
       alert("Note updated.");
