@@ -263,6 +263,7 @@ async function loadQuizzes(direction = "initial") {
         <div class="space-x-2">
           <button class="editQuizBtn bg-yellow-400 px-3 py-1 rounded hover:bg-yellow-500" data-id="${quizId}">Edit</button>
           <button class="deleteQuizBtn bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600" data-id="${quizId}">Delete</button>
+          <button class="viewQuizBtn bg-blue-600 text-white px-3 py-1 rounded hover: bg-blue-700" data-id="${quizId}">View</button>
         </div>
       `;
       quizzesList.appendChild(div);
